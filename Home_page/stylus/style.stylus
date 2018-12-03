@@ -1,0 +1,89 @@
+$font           = 'Source Code Pro', monospace
+
+
+$color-dark     = #222222
+
+$color-com      = #aaaaaa
+$color-kwd      = #4eb5e1
+$color-pln      = #222222
+$color-pun      = #5ac8aa
+$color-typ      = #ff4c42
+
+
+*
+*:before
+*:after
+  margin: 0
+  padding: 0
+  outline: 0
+  border: 0
+  box-sizing: border-box
+
+body
+  font-family: $font
+  background: #222
+  
+canvas
+  display: block
+  cursor: default
+  
+  
+  svg#circle
+    position: absolute
+    top: 0
+    left: 0
+    stroke-dasharray:  190
+    stroke-dashoffset: 190
+    stroke-linecap: round
+    transition: all .2s ease-out
+  
+  &:hover
+    transform: translate(0, -2px)
+    
+    svg#circle
+      stroke-dashoffset: 0
+  
+  &:before
+  &:after
+    display: block
+    transition: all .2s ease-out
+    
+  &:before
+    content: '</>'
+    
+  &:after
+    content: 'X'
+    
+  &.popup__btn_close
+    transform: translate(0, -2px)
+    
+    svg#circle
+      stroke-dashoffset: 0
+    
+    &:before
+      margin-top: -($popup-btn-size)
+  
+
+  
+pre
+  &
+  &.prettyprint
+    font-family: $font
+    line-height: 1.3
+    font-size: 12px
+    border: 0
+    
+    .com
+      color: $color-com
+    
+    .kwd
+      color: $color-kwd
+    
+    .pln
+      color: $color-pln
+      
+    .pun
+      color: $color-pun
+
+    .typ
+      color: $color-typ

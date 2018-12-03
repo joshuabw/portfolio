@@ -1,0 +1,239 @@
+const distance = (x0, y0, x1, y1) => {
+  return Math.sqrt(Math.pow(x1 - x0, 2) + Math.pow(y1 - y0, 2))
+}
+
+
+
+const settings = {
+  speed:       .002,
+  strokeLine:  false,
+  opacityLine: .1,
+}
+
+
+const gui = new dat.GUI()
+
+gui.add(settings, 'speed', 0, .05).step(.001)
+gui.add(settings, 'strokeLine')
+gui.add(settings, 'opacityLine', 0, .2).step(.05)
+
+
+const stats = new Stats()
+
+stats.setMode(0)
+stats.domElement.style.position = 'absolute'
+stats.domElement.style.left = '15px'
+stats.domElement.style.top = '0px'
+document.body.appendChild(stats.domElement)
+
+
+
+class Noise {
+  constructor() {
+    this.p           = new Array(512)
+    this.permutation = this._shuffle(this._range(1, 255))
+
+    for (let i = 256; i--;) {
+      this.p[256+i] = this.p[i] = this.permutation[i]
+    }
+  }
+
+  do(x, y = 0, z = 0) {
+    this.X = Math.floor(x) & 255
+    this.Y = Math.floor(y) & 255
+    this.Z = Math.floor(z) & 255
+
+    x -= Math.floor(x)
+    y -= Math.floor(y)
+    z -= Math.floor(z)
+
+    this.u = this._fade(x)
+    this.v = this._fade(y)
+    this.w = this._fade(z)
+
+    this.A  = this.p[this.X] + this.Y
+    this.AA = this.p[this.A] + this.Z
+    this.AB = this.p[this.A+1] + this.Z
+
+    this.B  = this.p[this.X + 1] + this.Y
+    this.BA = this.p[this.B] + this.Z
+    this.BB = this.p[this.B + 1] + this.Z
+
+    return this._scale(this._lerp(this.w, this._lerp(this.v, this._lerp(this.u, this._grad(this.p[this.AA], x, y, z),
+        this._grad(this.p[this.BA], x-1, y, z)),
+        this._lerp(this.u, this._grad(this.p[this.AB], x, y-1, z),
+        this._grad(this.p[this.BB], x-1, y-1, z))),
+        this._lerp(this.v, this._lerp(this.u, this._grad(this.p[this.AA+1], x, y, z-1),
+        this._grad(this.p[this.BA+1], x-1, y, z-1)),
+        this._lerp(this.u, this._grad(this.p[this.AB+1], x, y-1, z-1),
+        this._grad(this.p[this.BB+1], x-1, y-1, z-1)))))
+  }
+
+  _scale(n) {
+    return (1 + n)/2
+  }
+
+  _fade(t) {
+    return t * t * t * (t * (t * 6 - 15) + 10)
+  }
+
+  _lerp(t, a, b) {
+    return a + t * (b - a)
+  }
+
+  _grad(hash, x, y, z) {
+    const h = hash & 15
+    const u = h < 8 ? x : y
+    const v = h < 4 ? y : h == 12 || h == 14 ? x : z
+
+    return ((h&1) == 0 ? u : -u) + ((h&2) == 0 ? v : -v)
+  }
+
+  _range(a, z) {
+    const results = []
+
+    for (let i = a; i <= z; i++) {
+      results.push(i)
+    }
+
+    return results
+  }
+
+  _shuffle([...arr]) {
+    let m = arr.length
+
+    while (m) {
+      const i = Math.floor(Math.random() * m--);
+
+      [arr[m], arr[i]] = [arr[i], arr[m]]
+    }
+
+    return arr
+  }
+
+}
+
+
+
+class Playground {
+  constructor(config) {
+    this.config  = config
+    
+    this.canvas  = this.config.canvas
+    this.ctx     = this.canvas.getContext('2d')
+    
+    this.noise   = this.config.noise
+    
+    this.size    = this.config.size
+    this.offset  = this.config.offset
+    
+    this.particles = this.createParticles()
+    
+    this.tick    = 1
+
+    window.addEventListener('resize', this._setSize.bind(this), false)
+  }
+  
+  _setSize() {
+    this.canvas.width  = window.innerWidth
+    this.canvas.height = window.innerHeight
+  }
+  
+  createParticles() {
+    const dots = []
+    
+    for (let j = this.size; j--;) {
+      for (let i = this.size; i--;) {
+        dots.push({
+          x: i * this.offset,
+          y: j * this.offset,
+          k: Math.random(),
+        })
+      }
+    }
+    
+    return dots
+  }
+  
+  _randomInt = (min, max) => {
+    return Math.floor(Math.random() * (max - min + 1)) + min
+  }
+  
+  drawDot(x, y, r, c) {
+    this.ctx.fillStyle = c
+    this.ctx.beginPath()
+    this.ctx.arc(x, y, r, 0, Math.PI*2, false)
+    this.ctx.closePath()
+    this.ctx.fill()
+  }
+
+  drawLine(x1, y1, x2, y2) {
+    const alpha = distance(x1, y1, x2, y2)
+
+    if (settings.strokeLine) {
+      this.ctx.strokeStyle = `rgba(255, 255, 255, ${settings.opacityLine})`
+    } else {
+      this.ctx.strokeStyle = `rgba(255, 255, 255, ${1 - alpha/30})`
+    }
+
+    this.ctx.lineWidth = 1
+    this.ctx.beginPath()
+    this.ctx.moveTo(x1, y1)
+    this.ctx.lineTo(x2, y2)
+    this.ctx.stroke()
+  }
+
+  loop() {
+    window.requestAnimationFrame(this.loop.bind(this))
+    stats.begin()
+    
+    this.tick += settings.speed
+    
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+    
+    const _x = this.canvas.width/2 - (this.offset * this.size - this.offset) / 2 - 50
+    const _y = this.canvas.height/2 - (this.offset * this.size - this.offset) / 2 - 50
+    
+    for (let i = this.particles.length; i--;) {
+      for (let j = this.particles.length; j--;) {
+        this.drawLine(
+          _x + this.particles[i].x + this.noise.do(this.tick + this.particles[i].k, this.particles[i].k * 10, 0)*100,
+          _y + this.particles[i].y + this.noise.do(this.particles[i].k * 10, this.tick + this.particles[i].k, 0)*100,
+          _x + this.particles[j].x + this.noise.do(this.tick + this.particles[j].k, this.particles[j].k * 10, 0)*100,
+          _y + this.particles[j].y + this.noise.do(this.particles[j].k * 10, this.tick + this.particles[j].k, 0)*100
+        )
+      }
+    }
+
+    this.particles.forEach((item, i) => {
+      this.drawDot(
+        (_x + item.x) + this.noise.do(this.tick + item.k, item.k * 10, 0)*100,
+        (_y + item.y) + this.noise.do(item.k * 10, this.tick + item.k, 0)*100,
+        2,
+        '#fff'
+      )
+    })
+    
+    stats.end()
+  }
+  
+  start() {
+    this._setSize()
+    this.loop()
+  }
+}
+
+const pg = new Playground({
+  canvas: document.getElementById('playground'),
+  noise: new Noise(),
+  size: 6,
+  offset: 30,
+})
+
+pg.start()
+
+
+
+
+
+
