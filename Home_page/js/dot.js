@@ -30,7 +30,7 @@ var distance = function distance(x0, y0, x1, y1) {
 
 
 var settings = {
-	speed: .004,
+	speed: .003,
 	strokeLine: false,
 	opacityLine: .1
 };
@@ -169,7 +169,7 @@ var
 			this.ctx = this.canvas.getContext('2d');
 			this.noise = this.config.noise;
 			this.size = this.config.size;
-			this.offset = this.config.offset*2;
+			this.offset = this.config.offset;
 			this.particles = this.createParticles();
 			this.tick = 1;
 			window.addEventListener('resize', this._setSize.bind(this), false);
@@ -202,7 +202,7 @@ var
 				x, y, r, c) {
 				this.ctx.fillStyle = c;
 				this.ctx.beginPath();
-				this.ctx.arc(x, y, r, 0, Math.PI * 2, false);
+				this.ctx.arc(x, y, r, 0, Math.PI * 3, false);
 				this.ctx.closePath();
 				this.ctx.fill();
 			}
@@ -216,10 +216,10 @@ var
 				if (settings.strokeLine) {
 					this.ctx.strokeStyle = 'rgba(0,0,0, ' + settings.opacityLine + ')';
 				} else {
-					this.ctx.strokeStyle = 'rgba(0,0,0, ' + (1 - alpha / 35) + ')';
+					this.ctx.strokeStyle = 'rgba(0,0,0, ' + (1 - alpha / 60) + ')';
 				}
 
-				this.ctx.lineWidth = 1.2;
+				this.ctx.lineWidth = 1;
 				this.ctx.beginPath();
 				this.ctx.moveTo(x1, y1);
 				this.ctx.lineTo(x2, y2);
@@ -238,8 +238,8 @@ var
 
 				this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-				var _x = this.canvas.width / 2 - (this.offset * this.size - this.offset) / 2 -50;
-				var _y = this.canvas.height / 2 - (this.offset * this.size - this.offset) / 2 -50;
+				var _x = this.canvas.width / 2 - (this.offset * this.size - this.offset) / 2 ;
+				var _y = this.canvas.height / 2 - (this.offset * this.size - this.offset) / 2 -30;
 
 				for (var i = this.particles.length; i--;) {
 					for (var j = this.particles.length; j--;) {
@@ -280,7 +280,7 @@ var pg = new Playground({
 	canvas: document.getElementById('playground'),
 	noise: new Noise(),
 	size: 10,
-	offset: 30
+	offset: 50
 });
 
 
